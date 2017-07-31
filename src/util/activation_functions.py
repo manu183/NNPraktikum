@@ -8,6 +8,7 @@ from numpy import exp
 from numpy import divide
 from numpy import ones
 from numpy import asarray
+import numpy as np
 
 
 class Activation:
@@ -64,12 +65,12 @@ class Activation:
     @staticmethod
     def softmax(netOutput):
         # Here you have to code the softmax function
-        pass
+        return np.exp(netOutput) / np.sum(np.exp(netOutput))
         
     @staticmethod
     def softmaxPrime(netOutput):
         # Here you have to code the softmax function
-        pass
+        return netOutput * (1 - netOutput)
         
     @staticmethod
     def getActivation(str):

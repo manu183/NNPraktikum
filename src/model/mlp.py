@@ -72,14 +72,24 @@ class MultilayerPerceptron(Classifier):
         # Build up the network from specific layers
         self.layers = []
 
+        self.hiddenNeurons = 50
+
         # Input layer
         inputActivation = "sigmoid"
         self.layers.append(LogisticLayer(train.input.shape[1], 128, 
                            None, inputActivation, False))
 
+        # Hidden layers - slightly increased accuracy with 2 hidden layers
+        hiddenActivation = "sigmoid"
+        self.layers.append(LogisticLayer(128, self.hiddenNeurons,
+                           None, hiddenActivation, False))
+
+        self.layers.append(LogisticLayer(self.hiddenNeurons, self.hiddenNeurons,
+                           None, hiddenActivation, False))
+
         # Output layer
         outputActivation = "softmax"
-        self.layers.append(LogisticLayer(128, 10, 
+        self.layers.append(LogisticLayer(self.hiddenNeurons, 10,
                            None, outputActivation, True))
 
         self.inputWeights = inputWeights
@@ -113,8 +123,14 @@ class MultilayerPerceptron(Classifier):
         # Here you have to propagate forward through the layers
         # And remember the activation values of each layer
         """
+        for layer in self.layers:
+            outp = layer.forward(inp)
+            inp = np.insert(outp,0,1)
+
+        return outp
+
         
-    def _compute_error(self, target):
+    def _compute_error(self, target, output):
         """
         Compute the total error of the network (error terms from the output layer)
 
@@ -123,13 +139,19 @@ class MultilayerPerceptron(Classifier):
         ndarray :
             a numpy array (1,nOut) containing the output of the layer
         """
-        pass
+        error = np.zeros(self.layers[-1].nOut)
+        for i in xrange(self.layers[-1].nOut):
+            error[i] = self.loss.calculateError(target[i],output[i])
+        return error
+        
     
     def _update_weights(self, learningRate):
         """
         Update the weights of the layers by propagating back the error
         """
-        pass
+        for layer in self.layers:
+            layer.updateWeights(learningRate)
+        
         
     def train(self, verbose=True):
         """Train the Multi-layer Perceptrons
@@ -139,14 +161,34 @@ class MultilayerPerceptron(Classifier):
         verbose : boolean
             Print logging messages with validation accuracy if verbose is True.
         """
-        pass
 
+        for epoch in xrange(self.epochs):
+            for img, label in zip(self.trainingSet.input,
+                                self.trainingSet.label):
+                labels = np.zeros([10])
+                labels[label] = 1
+                output = self._feed_forward(img)
+                error = self._compute_error(labels, output)
+                nextWeights = np.ones(self.layers[-1].nOut)
+                nextDerivative = self.loss.calculateDerivative(labels, output)
+                for layer in reversed(self.layers):
+                    nextDerivative = layer.computeDerivative(nextDerivative, nextWeights)
+                    nextWeights = np.transpose(layer.weights[1:])
+
+                self._update_weights(self.learningRate)
+
+            if verbose:
+                acc = accuracy_score(self.validationSet.label,
+                                          list(map(self.classify, self.validationSet)))
+                self.performances.append(acc)
+                print("Trained epoch {0}/{1}. Accuracy on valdidation set {2:.1f}%."
+                                          .format(epoch + 1, self.epochs, acc * 100))
 
 
     def classify(self, test_instance):
         # Classify an instance given the model of the classifier
         # You need to implement something here
-        pass
+        return np.argmax(self._feed_forward(test_instance))
         
 
     def evaluate(self, test=None):

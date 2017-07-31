@@ -124,17 +124,16 @@ class LogisticLayer():
 
         # Or even more general: doesn't care which activation function is used
         # dado: derivative of activation function w.r.t the output
-        dado = self.activationDerivative(self.outp)
-        self.deltas = (dado * np.dot(next_derivatives, next_weights))
+        # dado = self.activationDerivative(self.outp)
+        # self.deltas = (dado * np.dot(next_derivatives, next_weights))
 
         # Or you can explicitly calculate the derivatives for two cases
         # Page 40 Back-propagation slides
-        # if self.isClassifierLayer:
-        #     self.deltas = (next_derivatives - self.outp) * self.outp * \
-        #                   (1 - self.outp)
-        # else:
-        #     self.deltas = self.outp * (1 - self.outp) * \
-        #                   np.dot(next_derivatives, next_weights)
+        if self.isClassifierLayer:
+            self.deltas = next_derivatives * self.activationDerivative(self.outp)
+        else:
+            self.deltas = self.activationDerivative(self.outp) * \
+                          np.dot(next_derivatives, next_weights)
         # Or you can have two computeDerivative methods, feel free to call
         # the other is computeOutputLayerDerivative or such.
         return self.deltas
